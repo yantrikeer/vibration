@@ -1,0 +1,49 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Adafruit_ADXL345_U.h>
+
+LiquidCrystal_I2C lcd(0x27,16,2);
+Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
+
+float accel_data[3];
+float accel_magnitude;
+unsigned long vibration_count = 0;
+unsigned long previous_time = 0;
+const float threshold = 1.5; // adjust the threshold value as needed
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  accel.begin();
+  pinMode(2, INPUT);
+}
+
+void loop() {
+  sensors_event_t event; 
+  accel.getEvent(&event);
+  accel_data[0] = event.acceleration.x;
+  accel_data[1] = event.acceleration.y;
+  accel_data[2] = event.acceleration.z;
+  accel_magnitude = sqrt(pow(accel_data[0], 2) + pow(accel_data[1], 2) + pow(accel_data[2], 2));
+  
+  if (accel_magnitude > threshold) { // adjust the threshold value as needed
+    vibration_count++;
+  }
+  
+  unsigned long current_time = millis();
+  if (current_time - previous_time >= 1000) { // update every second
+    float frequency = (float)vibration_count / ((float)(current_time - previous_time) / 1000);
+    
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Freq:");
+    lcd.print(frequency);
+    lcd.setCursor(9, 0);
+    lcd.print("Hz");
+    lcd.setCursor(0, 1);
+    lcd.print("Vib:");
+    lcd.print(vibration_count);
+    
+    previous_time = current_time;
+  }
+}
