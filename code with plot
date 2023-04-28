@@ -1,0 +1,75 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define VIBRATION_SENSOR_PIN 2
+#define RED_LED_PIN 3
+#define GREEN_LED_PIN 4
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  pinMode(VIBRATION_SENSOR_PIN, INPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  
+  lcd.init();
+  lcd.backlight();
+  
+  Serial.begin(9600); // Initialize serial communication
+}
+
+void loop() {
+  int vibrationValue = digitalRead(VIBRATION_SENSOR_PIN);
+  float accelerationValue = readAcceleration();
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Vibration: ");
+  lcd.print(vibrationValue);
+  
+  lcd.setCursor(0, 1);
+  lcd.print("Acceleration: ");
+  lcd.print(accelerationValue);
+  
+  if (vibrationValue == HIGH) {
+    digitalWrite(RED_LED_PIN, HIGH);
+    Serial.println("Vibration detected");
+  } else {
+    digitalWrite(RED_LED_PIN, LOW);
+    Serial.println("No vibration");
+  }
+  
+  if (accelerationValue > 10) {
+    digitalWrite(GREEN_LED_PIN, HIGH);
+    Serial.println("Significant acceleration");
+  } else {
+    digitalWrite(GREEN_LED_PIN, LOW);
+    Serial.println("No significant acceleration");
+  }
+  
+  delay(100);
+}
+
+float readAcceleration() {
+  byte buffer[6];
+  float x, y, z;
+  
+  Wire.beginTransmission(0x53);
+  Wire.write(0x32);
+  Wire.endTransmission(false);
+  
+  Wire.requestFrom(0x53, 6, true);
+  
+  for (int i = 0; i < 6; i++) {
+    buffer[i] = Wire.read();
+  }
+  
+  x = (buffer[1] << 8) | buffer[0];
+  y = (buffer[3] << 8) | buffer[2];
+  z = (buffer[5] << 8) | buffer[4];
+  
+  x /= 256;
+  y /= 256;
+  z /= 256;
+  
+  return sqrt(x*x + y*y + z*z);
+}
