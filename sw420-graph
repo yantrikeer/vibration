@@ -1,0 +1,47 @@
+int led = 13;
+int vs = 9;
+
+unsigned long previousMillis = 0;
+unsigned long interval = 1000; // time interval for frequency measurement
+unsigned long startTime = 0; // start time of interval
+int numPulses = 0; // number of pulses counted in interval
+
+void setup() {
+  pinMode(led, OUTPUT);
+  pinMode(vs, INPUT); 
+  Serial.begin(9600); 
+}
+
+void loop() {
+  long measurement = vibration();
+  if (measurement > 50) {
+    digitalWrite(led, HIGH);
+  }
+  else {
+    digitalWrite(led, LOW); 
+  }
+
+  // Measure frequency every 'interval' milliseconds
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    numPulses = 0; // reset pulse count
+    startTime = currentMillis; // save start time of interval
+  }
+  else {
+    numPulses += measurement > 50; // count pulses above threshold
+  }
+
+  // Calculate frequency (in Hz)
+  float frequency = 1000.0 * numPulses / (currentMillis - startTime);
+
+  // Print frequency and time to Serial Monitor
+  Serial.println(frequency);
+
+  delay(50); // wait for next measurement
+}
+
+long vibration() {
+  long measurement = pulseIn(vs, HIGH);
+  return measurement;
+}
